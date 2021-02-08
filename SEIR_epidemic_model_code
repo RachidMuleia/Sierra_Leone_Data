@@ -1,0 +1,53 @@
+model{
+##JAGS code for modelling Ebola using Lekone approach
+# This is a joint model.
+
+for(id in 1:14){
+S[1,id]<-popsize[id]-round(E[1,id])-round(I[1,id])
+
+#E[1,id]<-100
+
+E[1,id]~dunif(0,1000) 
+# likewise santermans
+
+
+#I[1,id]<-30
+I[1,id]~dunif(0,20)
+for(t in 2:T){
+   B[t-1,id]~dbin(P[t-1,id],S[t-1,id])
+   P[t-1,id]<-1-exp(-beta[t-1,id]*round(I[t-1,id])/popsize[id])
+   
+   beta[t-1,id]<-betast[1,id]*(1-step(t-(T/12)))+betast[2,id]*step(t-(T/12))*(1-step(t-(2*T/12)))+ betast[3,id]*step(t-(2*T/12))*(1-step(t-(3*T/12)))+betast[4,id]*step(t-(3*T/12))*(1-step(t-(4*T/12)))+betast[5,id]*step(t-(4*T/12))*(1-step(t-(5*T/12)))+betast[6,id]*step(t-(5*T/12))*(1-step(t-(6*T/12)))+betast[7,id]*step(t-(6*T/12))*(1-step(t-(7*T/12)))+betast[8,id]*step(t-(7*T/12))*(1-step(t-(8*T/12)))+betast[9,id]*step(t-(8*T/12))*(1-step(t-(9*T/12)))+ betast[10,id]*step(t-(9*T/12))*(1-step(t-(10*T/12))) +betast[11,id]*step(t-(10*T/12))*(1-step(t-(11*T/12)))+ betast[12,id]*step(t-(11*T/12))
+    
+   C[t-1,id]~dbin(Pc, round(E[t-1,id]))
+   D[t-1,id]~dbin(Pr, round(I[t-1,id]))
+     
+   S[t,id]<-S[t-1,id]-B[t-1,id]
+   E[t,id]<-round(E[t-1,id])+B[t-1,id]-C[t-1,id]
+   I[t,id]<-round(I[t-1,id])+C[t-1,id]-D[t-1,id]
+   #R[id,t]<-R[id,t-1]+D[id,t]
+
+   #Cpred[t-1, id]~dbin(Pc, E[t-1,id])
+}
+   for (j in 1:12){
+        betast[j,id]~dnorm(mean.beta ,tau.beta)
+		
+	    RN[j,id]<-betast[j,id]/gamma
+		#RN[j,id]<-betast[j,id]/gamma
+		
+}
+
+}
+
+
+incubation~dnorm(1.29,1/(0.006661227))
+infectious~dnorm(1,1/(0.0006491755))
+rho<-1/incubation
+gamma<-1/infectious
+Pc<-1-exp(-rho)
+Pr<-1-exp(-gamma)
+mean.beta~dnorm(1.4,1/(0.0014161))
+tau.beta~dgamma(100,1)
+
+sigma.beta<-1/tau.beta
+}
